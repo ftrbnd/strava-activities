@@ -16,12 +16,14 @@ activities.get('/', zValidator('query', dateSchema), async (c) => {
 
 	const queries = c.req.valid('query');
 
-	const query = queries
-		? `&after=${
-				new Date(`${queries.year}-${queries.month}-${queries.date}`).getTime() /
-				1000
-		  }`
-		: '';
+	const query =
+		queries?.year && queries.month && queries.date
+			? `&after=${
+					new Date(
+						`${queries.year}-${queries.month}-${queries.date}`
+					).getTime() / 1000
+			  }`
+			: '';
 
 	const res = await fetch(
 		`https://www.strava.com/api/v3/athlete/activities?per_page=200${query}`,
