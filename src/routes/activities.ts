@@ -6,20 +6,21 @@ import {
 	dateSchema,
 	updatableActivitySchema,
 } from '../util/types';
+import { zValidator } from '@hono/zod-validator';
 
 const activities = new Hono();
 
-activities.get('/', async (c) => {
+activities.get('/', zValidator('query', dateSchema), async (c) => {
 	const { COOKIE_SECRET } = env<{ COOKIE_SECRET: string }>(c);
-
 	const access_token = await getSignedCookie(c, COOKIE_SECRET, 'access_token');
-	const year = c.req.query('year');
-	const month = c.req.query('month');
-	const date = c.req.query('date');
 
-	const validDate = dateSchema.safeParse(`${year}-${month}-${date}`);
-	const query = validDate.data
-		? `&after=${validDate.data.getTime() / 1000}`
+	const queries = c.req.valid('query');
+
+	const query = queries
+		? `&after=${
+				new Date(`${queries.year}-${queries.month}-${queries.date}`).getTime() /
+				1000
+		  }`
 		: '';
 
 	const res = await fetch(
@@ -38,28 +39,35 @@ activities.get('/', async (c) => {
 	return c.json(activities);
 });
 
-activities.patch('/:id', async (c) => {
-	const id = c.req.param('id');
-	const body = await c.req.json();
-	const updatableActivity = updatableActivitySchema.parse(body);
+activities.patch(
+	'/:id',
+	zValidator('json', updatableActivitySchema),
+	async (c) => {
+		const id = c.req.param('id');
+		const updatableActivity = c.req.valid('json');
 
-	const { COOKIE_SECRET } = env<{ COOKIE_SECRET: string }>(c);
-	const access_token = await getSignedCookie(c, COOKIE_SECRET, 'access_token');
+		const { COOKIE_SECRET } = env<{ COOKIE_SECRET: string }>(c);
+		const access_token = await getSignedCookie(
+			c,
+			COOKIE_SECRET,
+			'access_token'
+		);
 
-	const res = await fetch(`https://www.strava.com/api/v3/activities/${id}`, {
-		method: 'PUT',
-		headers: {
-			Authorization: `Bearer ${access_token}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify(updatableActivity),
-	});
-	if (!res.ok) return c.text(`Failed to update Activity #${id}`, 500);
+		const res = await fetch(`https://www.strava.com/api/v3/activities/${id}`, {
+			method: 'PUT',
+			headers: {
+				Authorization: `Bearer ${access_token}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(updatableActivity),
+		});
+		if (!res.ok) return c.text(`Failed to update Activity #${id}`, 500);
 
-	const data = await res.json();
-	const newActivity = activitySchema.parse(data);
+		const data = await res.json();
+		const newActivity = activitySchema.parse(data);
 
-	return c.json(newActivity);
-});
+		return c.json(newActivity);
+	}
+);
 
 export { activities };

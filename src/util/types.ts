@@ -30,7 +30,13 @@ export const updatableActivitySchema = z.object({
 	gear_id: z.string().optional(),
 });
 
-export const dateSchema = z.coerce.date();
+export const dateSchema = z
+	.object({
+		year: z.coerce.number().optional(),
+		month: z.coerce.number().optional(),
+		date: z.coerce.number().optional(),
+	})
+	.optional();
 
 export type TokenResponse = z.infer<typeof tokenResponseSchema>;
 export type Activity = z.infer<typeof activitySchema>;
