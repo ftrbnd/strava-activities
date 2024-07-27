@@ -2,9 +2,6 @@ import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { tokenResponseSchema } from '../util/types';
 import { setSignedCookie } from 'hono/cookie';
-import { configDotenv } from 'dotenv';
-
-configDotenv();
 
 const auth = new Hono();
 
@@ -20,8 +17,6 @@ auth.get('/login', (c) => {
 });
 
 auth.get('/login/callback', async (c) => {
-	console.log('h');
-
 	const code = c.req.query('code');
 
 	const { STRAVA_CLIENT_ID } = env<{ STRAVA_CLIENT_ID: string }>(c);
